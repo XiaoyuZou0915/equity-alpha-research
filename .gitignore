@@ -218,3 +218,20 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local virtual environment
+.venv/
+
+# Local research data
+data/raw/
+data/processed/
+
+# Secrets
+.env
+*.key
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
