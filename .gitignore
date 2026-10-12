@@ -235,3 +235,5 @@ data/processed/
 
 # macOS
 .DS_Store
+
+.Rhistory
