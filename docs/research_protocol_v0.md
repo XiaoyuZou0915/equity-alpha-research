@@ -10,19 +10,19 @@ Investigate whether transparent price–volume signals contain out-of-sample inf
 
 ### 1.1 Research Hypotheses
 
-- H1 — Signal Predictability
+**H1 — Signal Predictability**
 
 Predefined price–volume signals contain positive and reasonably stable out-of-sample information about the cross-sectional ranking of future equity returns.
 
 Primary evidence: out-of-sample Rank IC, evaluated across dates with appropriate uncertainty estimates.
 
-- H2 — Incremental Value of Nonlinear Models
+**H2 — Incremental Value of Nonlinear Models**
 
 A shallow nonlinear boosting model provides incremental out-of-sample cross-sectional predictive value relative to a transparent signal composite and a regularized linear baseline (Ridge).
 
 Primary evidence: paired differences in out-of-sample Rank IC on common evaluation dates and securities.
 
-- H3 — Economic Relevance
+**H3 — Economic Relevance**
 
 Any incremental predictive value translates into economically meaningful portfolio performance after accounting for turnover, transaction costs, and relevant short-selling costs.
 
@@ -34,13 +34,10 @@ Failure to support any hypothesis will be reported as a valid research outcome.
 
 ### 2.1 Signal Frequency
 
-Signal frequency: Weekly.
-
-Signal observation date: The final regular trading day of each calendar week on the US equity market.
-
-Data frequency: Daily OHLCV.
-
-All signal inputs must be available before the model decision time.
+- Signal frequency: Weekly.
+- Signal observation date: The final regular trading day of each calendar week on the US equity market.
+- Data frequency: Daily OHLCV.
+- All signal inputs must be available before the model decision time.
 
 ### 2.2 Feature Cutoff
 
@@ -178,11 +175,9 @@ The primary validation approach will use chronological expanding-window training
 
 At each model fitting date:
 
-Training observations must precede the relevant evaluation period.
-
-All training labels must already be available at the fitting cutoff.
-
-Model preprocessing, imputation, scaling, and hyperparameter fitting must use training-eligible observations only.
+- Training observations must precede the relevant evaluation period.
+- All training labels must already be available at the fitting cutoff.
+- Model preprocessing, imputation, scaling, and hyperparameter fitting must use training-eligible observations only.
 
 Predictions must be generated without access to future returns or future universe membership.
 
@@ -200,11 +195,9 @@ The implementation must explicitly audit whether each training label was availab
 
 The planned model hierarchy is:
 
-Transparent rank-based signal composite.
-
-Regularized linear model (Ridge).
-
-Shallow nonlinear boosting model.
+1. Transparent rank-based signal composite.
+2. Regularized linear model (Ridge).
+3. Shallow nonlinear boosting model.
 
 The primary predictive metric is out-of-sample cross-sectional Rank IC.
 
@@ -234,19 +227,13 @@ Any post-holdout exploratory modifications must be clearly identified and must n
 
 The following specifications remain to be finalized:
 
-Minimum initial training-window length.
-
-Exact retraining frequency.
-
-Detailed walk-forward folds.
-
-Hyperparameter search budget.
-
-Purging or embargo requirements for overlapping labels.
-
-Final bootstrap configuration.
-
-Final development and holdout boundaries if data coverage differs from the target.
+- Minimum initial training-window length.
+- Exact retraining frequency.
+- Detailed walk-forward folds.
+- Hyperparameter search budget.
+- Purging or embargo requirements for overlapping labels.
+- Final bootstrap configuration.
+- Final development and holdout boundaries if data coverage differs from the target.
 
 ## 5. Open Design Decisions
 
