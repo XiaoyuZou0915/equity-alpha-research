@@ -179,3 +179,86 @@ The existing five-stock dataset is suitable for code prototyping and corporate-a
 Do not finalize the production data provider until historical coverage, survivorship-bias treatment, point-in-time properties and access costs have been evaluated.
 
 Avoid developing a full production backtest based on an unverified data source.
+
+## 7. Security Master and Point-in-Time Universe
+
+### 7.1 Purpose
+
+The Security Master provides a stable security identity and historical eligibility information for constructing a point-in-time equity universe.
+
+Ticker symbols must not be treated as permanent unique security identifiers.
+
+The initial implementation uses synthetic data to validate universe selection logic before production data integration.
+
+### 7.2 Prototype Security Master Schema
+
+| Field | Data Type | Description |
+|---|---|---|
+| security_id | Integer | Stable internal security identifier |
+| ticker | String | Security ticker in the simplified prototype |
+| listing_date | Date | First eligible listing date |
+| delisting_date | Date / Null | Last trading date under the prototype convention |
+| exchange | String | Exchange classification |
+| share_type | String | Security classification |
+
+The prototype assumes ticker, exchange, and share type remain constant.
+
+Production data must support historical changes in these attributes and distinguish effective dates from information availability dates.
+
+### 7.3 Universe Eligibility Rules
+
+The prototype function `get_pit_universe(security_master, as_of_date)` applies the following rules:
+
+1. `listing_date <= as_of_date`
+2. `delisting_date` is missing or `delisting_date >= as_of_date`
+3. Exchange is NYSE, NASDAQ, or NYSE American
+4. Share type is COMMON
+
+These rules are evaluated using synthetic security records.
+
+Price, liquidity, trading-halt, and historical metadata availability filters are not yet implemented.
+
+### 7.4 Historical Universe Examples
+
+| Selection Date | Eligible Securities |
+|---|---|
+| 2015-06-30 | ALPHA, BETA |
+| 2019-06-30 | ALPHA |
+| 2021-06-30 | ALPHA, GAMMA |
+
+BETA is included in 2015 even though it delists in 2018.
+
+GAMMA is excluded before its 2020 listing.
+
+DELTA is excluded because it is an ETF.
+
+EPSILON is excluded because it trades on OTC.
+
+### 7.5 Automated Testing
+
+The prototype includes assertions covering:
+
+- Historical universe membership.
+- Inclusion of securities that delist later.
+- Exclusion of securities before their IPO.
+- Exclusion of ETFs and OTC securities.
+- Listing-date boundary behavior.
+- Delisting-date boundary behavior.
+
+A separate experiment demonstrates survivorship bias by removing delisted securities before historical universe construction.
+
+These are synthetic unit tests, not proof of production data quality.
+
+### 7.6 Production Requirements
+
+Before production use, the system must support:
+
+- Permanent security identifiers and historical identifier mappings.
+- Historical ticker, exchange, and share-type changes.
+- Security metadata effective dates and availability dates.
+- Historical price and liquidity eligibility rules.
+- Delisting events and terminal-return treatment.
+- Missing data and trading-halt policies.
+- Automated data integrity and leakage checks.
+
+**Status:** Prototype only. Not approved for production backtesting.

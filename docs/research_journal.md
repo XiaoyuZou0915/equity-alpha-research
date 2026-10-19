@@ -171,3 +171,84 @@ The document defines preliminary OHLCV, dividend, split, return and point-in-tim
 - Continue the production data provider feasibility assessment.
 - Specify the security identifier and point-in-time universe schema.
 - Define data validation checks before formal signal development.
+
+## Week 1 Day 4 — Security Master and PIT Universe Prototype
+
+**Status:** Completed 
+**Date:** 2026-10-19
+
+### 1. Objective
+
+Develop a synthetic Security Master and a preliminary point-in-time universe construction function.
+
+The purpose is to validate historical security eligibility rules before integrating a production equity data provider.
+
+### 2. Synthetic Security Master
+
+Created `notebooks/02_pit_universe.ipynb`.
+
+The synthetic dataset contains five securities:
+
+| Security | Key Property |
+|---|---|
+| ALPHA | NYSE common stock, listed since 2010 |
+| BETA | NASDAQ common stock, delisted in 2018 |
+| GAMMA | NASDAQ common stock, listed in 2020 |
+| DELTA | ETF |
+| EPSILON | OTC common stock |
+
+The dataset uses stable internal security IDs and simplified listing metadata.
+
+### 3. Point-in-Time Universe Function
+
+Implemented:
+
+`get_pit_universe(security_master, as_of_date)`
+
+The function filters securities based on:
+
+- Listing date.
+- Delisting date.
+- Eligible exchange.
+- Common-share classification.
+
+Observed results:
+
+| Date | Eligible Universe |
+|---|---|
+| 2015-06-30 | ALPHA, BETA |
+| 2019-06-30 | ALPHA |
+| 2021-06-30 | ALPHA, GAMMA |
+
+Boundary checks confirmed the expected behavior around listing and delisting dates.
+
+### 4. Automated Tests
+
+Added tests for historical universe membership, future IPO exclusion, security classification, and listing/delisting boundaries.
+
+Added a deliberate survivorship-bias experiment that removes delisted securities before constructing the historical universe.
+
+**Verification status:** Confirm final assertion outputs before closing Day 4.
+
+### 5. Key Research Findings
+
+- Historical universe construction must depend on historical eligibility, not current survival.
+- Stable security identity is distinct from the ticker symbol.
+- A correct PIT filtering function cannot recover missing historical securities.
+- Automated tests help detect unintended changes to eligibility logic.
+- Synthetic tests do not guarantee production data is point-in-time accurate.
+
+### 6. Current Limitations
+
+- Historical ticker and exchange changes are not modeled.
+- Price and liquidity eligibility rules are not implemented.
+- Metadata availability dates are not modeled.
+- Delisting returns and missing execution prices remain unresolved.
+- The production equity data provider is still undecided.
+
+### 7. Next Steps
+
+- Design historical security-attribute records.
+- Add point-in-time price and liquidity filtering.
+- Extend data validation and leakage tests.
+- Continue evaluating production data source feasibility.
