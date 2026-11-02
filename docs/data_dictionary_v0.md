@@ -380,3 +380,75 @@ These tests demonstrate the behavior of the synthetic implementation but do not 
 - No production data provider integration.
 
 **Status:** Synthetic research infrastructure prototype; production validation pending.
+
+## 9. Week 1 Integration Audit and Engineering Backlog
+
+### 9.1 Audit Scope
+
+The Week 1 integration review compares:
+
+- `docs/research_protocol_v0.md`
+- `docs/data_dictionary_v0.md`
+- `notebooks/02_pit_universe.ipynb`
+
+The purpose is to identify differences between research requirements and the current synthetic Python implementation.
+
+### 9.2 Requirements vs. Implementation
+
+| Requirement | Current Implementation | Status |
+|---|---|---|
+| Historical listing and delisting eligibility | `get_pit_universe()` | Synthetic prototype implemented |
+| Minimum share price of $5 | `get_pit_price_universe()` | Synthetic prototype implemented |
+| Median dollar volume of at least $10m | `get_pit_liquidity()` | Synthetic prototype implemented |
+| Complete 60-observation liquidity window | Required by the liquidity function | Implemented for synthetic data |
+| Minimum 252-session price history | No separate minimum-history check | Not implemented |
+| Monthly universe reconstitution | Functions accept an individual selection date | Not implemented |
+| Price freshness | Separate `add_price_freshness_check()` function | Not integrated |
+| Exchange trading calendar | Uses pandas business dates | Not implemented |
+| Data availability timestamps | Uses observation dates only | Not implemented |
+| Historical ticker and exchange changes | Static synthetic attributes | Not implemented |
+| Delisting-return handling | No return reconstruction | Not implemented |
+
+### 9.3 Engineering Backlog
+
+#### P0 — Data Integrity and Leakage Controls
+
+- Integrate price freshness checks into the main eligibility pipeline.
+- Reject or quarantine invalid market observations before computing eligibility.
+- Specify a minimum history requirement independent of the liquidity window.
+- Validate historical observation dates against the applicable exchange calendar.
+- Define data availability cutoffs and prevent future information leakage.
+
+#### P1 — Historical Universe Improvements
+
+- Implement monthly universe reconstitution.
+- Support historical ticker, exchange, and share-type changes.
+- Detect missing or stale market observations.
+- Validate consecutive trading-session coverage in rolling liquidity windows.
+- Add structured data-quality reports with security IDs, dates, and issue codes.
+
+#### P2 — Production Data Integration
+
+- Confirm access to a suitable research-grade data provider.
+- Map provider security identifiers to stable internal IDs.
+- Audit corporate-action adjustment conventions.
+- Implement delisting-event and terminal-return handling.
+- Validate point-in-time historical universe reconstruction.
+
+### 9.4 Data Quality Findings
+
+The synthetic data quality experiments demonstrated:
+
+1. Duplicate security-date records can be detected and rejected.
+2. Missing, zero, and negative prices should be distinguished from valid prices that fail eligibility thresholds.
+3. The original price eligibility function may accept stale prices.
+4. A separate freshness check can reject stale prices, but is not yet integrated into the main function.
+5. Passing synthetic unit tests does not establish production-level point-in-time integrity.
+
+### 9.5 Week 1 Completion Criteria
+
+Week 1 completion means the exploratory data audits, synthetic universe prototype, and initial automated tests have been developed and reviewed.
+
+It does not mean the production data pipeline is complete.
+
+**Status:** Research infrastructure prototype with identified engineering gaps.ß

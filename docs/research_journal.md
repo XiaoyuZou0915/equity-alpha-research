@@ -350,3 +350,97 @@ Production use requires historical security metadata, compatible price-volume ad
 - Consider historical security attribute changes.
 - Continue evaluating CRSP / Sharadar data feasibility.
 - Prepare the PIT eligibility logic for future production-data integration.
+
+---
+
+## Week 1 Day 6 — Integration and Data Quality Review
+
+**Status:** Completed; Git verification pending.
+
+### 1. Objective
+
+Evaluate the reproducibility and robustness of the Week 1 point-in-time universe prototype.
+
+Identify outstanding engineering requirements before integrating a production equity dataset.
+
+### 2. Notebook Reproducibility
+
+Reviewed the importance of restarting the Python kernel and executing all notebook cells in order.
+
+A successful isolated cell execution does not establish reproducibility because notebook variables may depend on hidden kernel state.
+
+Added an integration summary covering security identifiers, historical universe membership, future IPO exclusion, combined eligibility, and incomplete liquidity windows.
+
+### 3. Duplicate Record Detection
+
+Constructed a synthetic duplicate security-date record.
+
+Verified the duplicate-detection behavior of the liquidity function.
+
+The preferred handling policy is to reject or quarantine conflicting records and investigate their source, rather than silently selecting one observation.
+
+### 4. Missing and Invalid Price Tests
+
+Tested:
+
+- Missing closing prices.
+- Zero closing prices.
+- Negative closing prices.
+
+The eligibility filter excluded these invalid values.
+
+Added `validate_daily_prices()` to distinguish basic data-quality problems from normal eligibility failures.
+
+### 5. Stale Price Experiment
+
+Removed recent ALPHA observations to simulate an outdated last available price.
+
+The existing price-selection function could still accept the historical closing price.
+
+Added a separate price freshness check that rejects prices not satisfying the prototype's selection-date rule.
+
+This check has not yet been integrated into the primary tradable-universe function.
+
+### 6. Protocol Consistency Audit
+
+Compared the Research Protocol, Data Dictionary, and synthetic Python implementation.
+
+Identified three important gaps:
+
+1. The 252-session minimum history requirement is not enforced.
+2. Monthly universe reconstitution is not implemented.
+3. Price freshness validation is not integrated into the combined eligibility pipeline.
+
+Additional production requirements include exchange calendars, availability timestamps, historical security metadata changes, and delisting-return treatment.
+
+### 7. Engineering Backlog
+
+Documented the outstanding work in `docs/data_dictionary_v0.md`, Section 9.
+
+Priorities include:
+
+- Data integrity and leakage controls.
+- Historical universe and eligibility improvements.
+- Production data provider integration.
+
+### 8. Week 1 Summary
+
+Completed the following project milestones:
+
+- Day 1: Environment setup and exploratory data-quality checks.
+- Day 2: Research Protocol v0 and hypothesis definitions.
+- Day 3: Corporate actions and point-in-time data audit.
+- Day 4: Synthetic Security Master and historical universe prototype.
+- Day 5: Price and liquidity eligibility prototype.
+- Day 6: Integration review and abnormal-data testing.
+
+The project now has a documented research design, exploratory market-data experiments, and a tested synthetic universe-selection prototype.
+
+Production data access, full point-in-time reconstruction, and formal out-of-sample backtesting remain future work.
+
+### 9. Next Steps
+
+- Review and prioritize the engineering backlog.
+- Strengthen eligibility and market-data integrity checks.
+- Continue production data source feasibility assessment.
+- Prepare for subsequent signal research only after core leakage controls are addressed.
