@@ -252,3 +252,101 @@ Added a deliberate survivorship-bias experiment that removes delisted securities
 - Add point-in-time price and liquidity filtering.
 - Extend data validation and leakage tests.
 - Continue evaluating production data source feasibility.
+
+## Week 1 Day 5 — PIT Price and Liquidity Eligibility
+
+**Status:** Completed; Git verification pending
+
+### 1. Objective
+
+Extend the point-in-time universe prototype with historical price and liquidity eligibility rules.
+
+The provisional thresholds are:
+
+- Minimum closing price: $5.
+- Minimum 60-observation median daily dollar volume: $10 million.
+
+### 2. Synthetic Data
+
+Created 80 synthetic business dates for five securities, producing 400 security-date observations.
+
+Each observation contains a security ID, date, closing price, volume, and calculated dollar volume.
+
+The dataset intentionally includes invalid post-delisting price observations for BETA.
+
+### 3. Price Eligibility
+
+Implemented `get_pit_price_universe()`.
+
+The function first applies historical security eligibility, then attaches the latest available price at or before the selection cutoff.
+
+On 2021-04-15:
+
+- ALPHA passes the $5 minimum price.
+- GAMMA fails because its price is $4.
+- BETA remains excluded despite having synthetic market data.
+
+### 4. Liquidity Eligibility
+
+Implemented `get_pit_liquidity()`.
+
+Daily dollar volume is calculated as:
+
+$$
+DV_{i,d}=P_{i,d}\times V_{i,d}
+$$
+
+The trailing 60-observation median dollar volume is used as the liquidity metric.
+
+A complete 60-observation window is required.
+
+### 5. Combined Universe
+
+Implemented `get_pit_tradable_universe()` to combine historical security eligibility, minimum price, and minimum liquidity.
+
+Results for 2021-04-15:
+
+| Ticker | Close | Median Dollar Volume | Eligible |
+|---|---:|---:|---|
+| ALPHA | $100 | $20 million | Yes |
+| GAMMA | $4 | $20 million | No |
+
+Only ALPHA passes all provisional criteria.
+
+### 6. Automated Tests
+
+All seven Day 5 PIT eligibility test groups passed.
+
+The tests covered:
+
+- Historical universe membership.
+- Combined price and liquidity screening.
+- Dollar-volume calculation.
+- Minimum historical observation count.
+- Future price leakage.
+- Exclusion of previously delisted securities.
+
+The future price leakage test modified observations after the selection date and confirmed that the historical results remained unchanged.
+
+### 7. Research Findings
+
+- Price and liquidity filters must be applied jointly.
+- High dollar volume does not compensate for failure to meet the minimum price requirement.
+- Median dollar volume is less sensitive to isolated extreme trading days than mean dollar volume.
+- Historical market data alone cannot establish security eligibility.
+- Future observations must not affect historical universe construction.
+- Missing or stale historical data require explicit eligibility policies.
+
+### 8. Remaining Limitations
+
+The current implementation uses synthetic observations and a simplified business-day calendar.
+
+Production use requires historical security metadata, compatible price-volume adjustment conventions, explicit availability timing, trading-calendar validation, stale-price checks, and delisting-return treatment.
+
+### 9. Next Steps
+
+- Strengthen data quality and price-staleness checks.
+- Validate complete exchange trading-day windows.
+- Consider historical security attribute changes.
+- Continue evaluating CRSP / Sharadar data feasibility.
+- Prepare the PIT eligibility logic for future production-data integration.

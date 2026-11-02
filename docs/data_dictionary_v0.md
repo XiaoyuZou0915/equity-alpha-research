@@ -262,3 +262,121 @@ Before production use, the system must support:
 - Automated data integrity and leakage checks.
 
 **Status:** Prototype only. Not approved for production backtesting.
+
+## 8. Point-in-Time Price and Liquidity Eligibility
+
+### 8.1 Purpose
+
+Extend the synthetic point-in-time security universe prototype with historical price and liquidity eligibility filters.
+
+Implementation notebook:
+
+`notebooks/02_pit_universe.ipynb`
+
+The implementation uses synthetic data only and is not approved for production backtesting.
+
+### 8.2 Synthetic Daily Market Data
+
+The prototype contains 80 synthetic business dates and five securities, giving 400 security-date records.
+
+| Field | Data Type | Description |
+|---|---|---|
+| date | Date | Synthetic market observation date |
+| security_id | Integer | Stable security identifier |
+| close | Float | Synthetic closing price |
+| volume | Integer | Synthetic share trading volume |
+| dollar_volume | Float | Closing price multiplied by volume |
+
+The synthetic date index uses pandas business days rather than a complete US exchange calendar.
+
+The dataset intentionally includes price records for BETA after its recorded delisting date to test whether the Security Master prevents invalid universe membership.
+
+### 8.3 Price Eligibility
+
+The provisional minimum price is $5 per share.
+
+A security passes the price filter if its latest available closing price at or before the selection cutoff is at least $5.
+
+The prototype uses:
+
+`get_pit_price_universe()`
+
+The actual production implementation must use a historically valid price convention and enforce price freshness and availability requirements.
+
+### 8.4 Dollar Volume
+
+Daily dollar volume is defined as:
+
+$$
+DV_{i,d}=P_{i,d}\times V_{i,d}
+$$
+
+The selected price and volume fields must use compatible share units.
+
+For the synthetic prototype, daily prices and volumes are constant for each security.
+
+### 8.5 Median Dollar Volume
+
+The liquidity metric is the median of the most recent 60 available daily dollar-volume observations at or before the selection cutoff:
+
+$$
+MDV_{i,t}^{(60)}
+=
+\operatorname{Median}
+\left(DV_{i,t-59},\ldots,DV_{i,t}\right)
+$$
+
+The provisional threshold is $10 million.
+
+The function `get_pit_liquidity()` requires 60 valid observations.
+
+If fewer than 60 observations are available, the metric is set to missing and the security fails the liquidity filter.
+
+The current implementation does not verify that these observations correspond to 60 consecutive exchange trading sessions.
+
+### 8.6 Combined Eligibility
+
+The function `get_pit_tradable_universe()` combines:
+
+1. Historical listing and delisting eligibility.
+2. Exchange and common-share eligibility.
+3. Minimum price eligibility.
+4. Minimum median dollar-volume eligibility.
+
+A security is eligible only when all required conditions are satisfied.
+
+For the synthetic example on 2021-04-15:
+
+| Security | Price | Median Dollar Volume | Final Eligibility |
+|---|---:|---:|---|
+| ALPHA | $100 | $20 million | Eligible |
+| GAMMA | $4 | $20 million | Ineligible |
+
+BETA remains excluded because it had already delisted, despite the presence of synthetic price records.
+
+### 8.7 Automated Tests
+
+Seven automated test groups passed:
+
+1. Historical security eligibility.
+2. Combined price and liquidity eligibility.
+3. Dollar-volume calculation.
+4. Complete 60-observation windows.
+5. Exclusion of insufficient-history securities.
+6. Invariance of historical results to future price modifications.
+7. Exclusion of previously delisted securities.
+
+These tests demonstrate the behavior of the synthetic implementation but do not establish complete point-in-time integrity for a production data source.
+
+### 8.8 Known Limitations
+
+- No actual US exchange trading calendar.
+- No explicit data availability timestamps.
+- No price staleness or trading-halt checks.
+- No validation of consecutive exchange trading sessions.
+- No historical exchange or share-classification changes.
+- No production corporate-action adjustment reconstruction.
+- No delisting-return or execution-price handling.
+- No production data provider integration.
+
+**Status:** Synthetic research infrastructure prototype; production validation pending.
