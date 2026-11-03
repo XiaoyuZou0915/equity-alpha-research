@@ -451,4 +451,166 @@ Week 1 completion means the exploratory data audits, synthetic universe prototyp
 
 It does not mean the production data pipeline is complete.
 
-**Status:** Research infrastructure prototype with identified engineering gaps.ß
+**Status:** Synthetic research infrastructure prototype; production validation pending.
+
+## 10. Week 2 Day 7 — PIT Eligibility Hardening
+
+### 10.1 Objective
+
+Strengthen the Week 1 synthetic point-in-time (PIT) universe prototype by integrating:
+
+1. Price freshness validation.
+2. Minimum 252-observation valid-price history.
+3. Regression tests for future-data invariance, stale prices, and duplicate market observations.
+
+These changes remain part of a synthetic research prototype, not a production-ready historical equity universe.
+
+### 10.2 Price Freshness
+
+Function: `get_pit_tradable_universe_v2()`
+
+The function reuses the historical universe, price, and liquidity checks from `get_pit_tradable_universe()`.
+
+It introduces:
+
+- `price_fresh`: whether the latest available price observation date matches the selection date.
+- Updated `price_eligible`: the original price eligibility result combined with `price_fresh`.
+- Recomputed `eligible`: price eligibility combined with liquidity eligibility.
+
+For the current synthetic dataset:
+
+```python
+price_fresh = (latest_price_date == as_of_date)
+```
+
+This is a provisional rule.
+
+It is not yet based on the actual exchange trading calendar, trading suspensions, or market-data availability timestamps.
+
+The baseline audit demonstrated that the Week 1 combined function could accept ALPHA with a stale price dated 2021-04-09 at a selection date of 2021-04-15, despite satisfying the 60-observation liquidity requirement.
+
+The v2 function successfully excluded this stale observation.
+
+### 10.3 Minimum History
+
+Function: `get_pit_history()`
+
+Parameters:
+
+- `daily_prices`: historical market observations.
+- `as_of_date`: point-in-time cutoff.
+- `min_history`: minimum required valid-price observations; default 252.
+
+Output fields:
+
+| Field | Definition |
+|---|---|
+| `security_id` | Stable synthetic security identifier |
+| `history_count` | Number of valid closing-price observations dated on or before `as_of_date` |
+| `history_eligible` | Boolean indicating whether `history_count >= min_history` |
+
+A valid closing price must be non-missing and strictly positive.
+
+Duplicate security-date records are rejected before calculating history counts.
+
+The current implementation counts valid historical observations, not necessarily consecutive exchange trading sessions.
+
+It does not yet verify exchange-calendar coverage, historical listing boundaries, or completeness of the preceding 252 trading sessions.
+
+### 10.4 Combined Eligibility Version 3
+
+Function: `get_pit_tradable_universe_v3()`
+
+The function combines:
+
+1. Historical security eligibility from the existing upstream universe logic.
+2. Minimum price threshold.
+3. Price freshness.
+4. Median dollar-volume liquidity requirement.
+5. Minimum valid-price history.
+
+The function joins historical observation counts using `security_id`, with a one-to-one merge validation.
+
+Missing history counts are treated as zero, and missing history-eligibility values are treated as `False`.
+
+The final eligibility decision is:
+
+```python
+eligible = (
+    price_eligible
+    & liquidity_eligible
+    & history_eligible
+)
+```
+
+The `price_eligible` field in v3 already incorporates the synthetic price-freshness check from v2.
+
+The historical security-master filters are applied upstream.
+
+### 10.5 Synthetic Test Data
+
+An extended synthetic dataset was created using 300 pandas business dates.
+
+The dataset contains 1,300 security-date observations:
+
+| Security | Observations | Historical eligibility role |
+|---|---:|---|
+| ALPHA | 300 | Sufficient history |
+| BETA | 300 | Historical security-master exclusion |
+| GAMMA | 100 | Insufficient history |
+| DELTA | 300 | Security-type exclusion |
+| EPSILON | 300 | Exchange exclusion |
+
+The use of `pd.bdate_range()` is a synthetic convenience and does not establish NYSE trading-calendar validity.
+
+The synthetic dataset deliberately includes observations whose relationship with listing and delisting history is not production-realistic.
+
+### 10.6 Tests Completed
+
+The following tests passed during Day 7:
+
+- Baseline stale-price vulnerability reproduction.
+- Clean-price and stale-price comparison using v2.
+- Minimum-history boundary tests: 251, 252, and 300 observations.
+- Combined eligibility v3 test.
+- Independent minimum-history failure test using GAMMA.
+- Future-data invariance after modifying later prices and volumes.
+- Stale-price rejection with sufficient liquidity and history.
+- Duplicate security-date record rejection.
+
+The current tests demonstrate expected behavior for the constructed synthetic scenarios.
+
+They do not establish full production-grade data integrity or the absence of all forms of look-ahead bias.
+
+### 10.7 Remaining Engineering Backlog
+
+#### High Priority
+
+- Replace calendar-date equality with exchange-session-aware freshness validation.
+- Define observation availability relative to the actual decision timestamp.
+- Validate minimum history using historical trading-session coverage.
+- Integrate consistent missing-price, invalid-price, and invalid-volume handling into the main eligibility pipeline.
+- Add explicit historical security-master validity checks.
+
+#### Medium Priority
+
+- Implement monthly universe reconstitution.
+- Handle historical ticker, exchange, share-class, and listing-status changes.
+- Define behavior for trading suspensions and prolonged price staleness.
+- Separate eligibility observations from return and execution price series.
+- Add structured data-quality error reports.
+
+#### Data Provider Dependencies
+
+- Confirm access to a suitable historical equity data provider.
+- Verify corporate-action adjustment conventions.
+- Obtain reliable historical security identifiers and metadata.
+- Audit delisting events and terminal returns.
+
+### 10.8 Implementation Status
+
+Week 2 Day 7 completed the synthetic integration of price freshness and minimum valid-price history into combined PIT eligibility.
+
+The implementation is an intermediate research prototype.
+
+**Production backtesting remains blocked by unresolved point-in-time data, calendar, availability, and historical security metadata requirements.**

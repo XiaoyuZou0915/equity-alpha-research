@@ -444,3 +444,125 @@ Production data access, full point-in-time reconstruction, and formal out-of-sam
 - Strengthen eligibility and market-data integrity checks.
 - Continue production data source feasibility assessment.
 - Prepare for subsequent signal research only after core leakage controls are addressed.
+
+---
+
+## Week 2 Day 7 — PIT Eligibility Hardening
+
+**Date:** 2026-11-03
+
+**Status:** Completed; committed and pushed to origin/main.
+
+### 1. Objectives
+
+Strengthen the Week 1 point-in-time universe prototype by implementing two previously identified requirements:
+
+1. Price freshness validation integrated into the combined eligibility pipeline.
+2. A minimum requirement of 252 valid closing-price observations.
+
+Add regression tests for data integrity and future-information invariance.
+
+### 2. Baseline Price Freshness Audit
+
+Reproduced the stale-price vulnerability in the existing combined universe function.
+
+Test scenario:
+
+- Selection date: 2021-04-15.
+- ALPHA last available price: 2021-04-09.
+- Liquidity observations: 60.
+- Existing final eligibility: `True`.
+
+The result demonstrated that a sufficient trailing liquidity window does not guarantee price freshness.
+
+An initial test used an earlier stale-price cutoff that also caused the liquidity window to become incomplete. The test was corrected to isolate freshness from liquidity eligibility.
+
+### 3. Integrated Price Freshness
+
+Implemented:
+
+`get_pit_tradable_universe_v2()`
+
+The function incorporates a synthetic price-freshness check into price eligibility and recomputes the final eligibility decision.
+
+Tests confirmed:
+
+- Fresh ALPHA remained eligible.
+- Stale ALPHA was excluded even with sufficient liquidity observations.
+
+The freshness rule remains provisional and requires a real exchange trading calendar.
+
+### 4. Minimum Valid-Price History
+
+Implemented:
+
+`get_pit_history()`
+
+The function counts non-missing, positive closing-price observations dated on or before the selection cutoff.
+
+Created an extended synthetic market dataset with:
+
+- 300 pandas business dates.
+- 1,300 total observations.
+- ALPHA with 300 observations.
+- GAMMA with 100 observations.
+
+Verified the minimum-history boundary:
+
+- 251 observations: ineligible.
+- 252 observations: eligible.
+- 300 observations: eligible.
+
+The function rejects duplicate security-date records.
+
+### 5. Combined Eligibility Version 3
+
+Implemented:
+
+`get_pit_tradable_universe_v3()`
+
+The function combines historical security eligibility, price threshold, price freshness, liquidity, and minimum-history eligibility.
+
+Results:
+
+- ALPHA passed with 300 valid historical observations.
+- GAMMA failed with only 100 valid historical observations.
+
+An isolated test raised GAMMA's price to $50 while preserving its insufficient history.
+
+GAMMA then passed price and liquidity checks but remained ineligible because of minimum history.
+
+### 6. Regression Tests
+
+Passed the following regression tests:
+
+1. Future price and volume modifications after the historical cutoff did not change the historical eligibility results.
+2. Stale ALPHA was excluded despite having sufficient liquidity and historical observations.
+3. Duplicate security-date observations were rejected.
+
+The future-data invariance test compared the complete returned DataFrames, not only final eligible ticker lists.
+
+### 7. Research Interpretation
+
+The new checks reduce specific data-integrity and point-in-time eligibility risks.
+
+However, passing these synthetic tests does not establish production-grade historical backtest validity.
+
+Remaining risks include:
+
+- Exchange-calendar correctness.
+- Data publication and availability timing.
+- Missing or invalid trading observations.
+- Historical security-master accuracy.
+- Trading suspensions and delistings.
+- Corporate-action adjustment and return reconstruction.
+
+### 8. Files Updated
+
+- `notebooks/02_pit_universe.ipynb`
+- `docs/data_dictionary_v0.md`
+- `docs/research_journal.md`
+
+### 9. Next Steps
+
+Week 2 Day 8 will focus on exchange trading calendars and data availability timing, with particular attention to the distinction between observation dates and model decision timestamps.
